@@ -30,12 +30,39 @@ Run `mitmproxy` or `mitmweb` with the add-on script `castor.py`.
 mitmproxy -s ./castor.py
 ```
 
+Run with web server UI.
+
 ```
-mitmweb -s ./castor.py --no-web-open-browser
+mitmweb -s ./castor.py
 ```
+
+On the Flow > Response tab, change **View** to `json-schema`, or
+set the `CASTOR_AUTO_RENDER` to `1` to auto render JSON resquest and responses
+to JSON schemas.
 
 ## Output
 
+Example output from `mitmproxy` generated JSON schema.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "Code": {
+      "type": "int"
+    },
+    "CalendarModelEventID": {
+      "type": "str"
+    },
+    "Refresh": {
+      "type": "int"
+    },
+    "More": {
+      "type": "int"
+    }
+  }
+}
+```
 
 ## Options
 
