@@ -12,33 +12,39 @@ mitmproxy add-on that captures JSON schemas.
 
 Clone this repository.
 
-```
+```sh
 git clone https://github.com/rancorm/castor.git
 cd castor
 ```
 
 Make Python virtual environment, install dependencies, and run.
 
-```
+```sh
 python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Run `mitmproxy` or `mitmweb` with the add-on script `castor.py`.
+Run `mitmproxy` terminal UI, `mitmdump` or `mitmweb` with the add-on script `castor.py`.
 
-```
+```sh
 mitmproxy -s ./castor.py
 ```
 
 Run with web server UI.
 
-```
+```sh
 mitmweb -s ./castor.py
 ```
 
 On the Flow > Response tab, change **View** to `json-schema`, or
 set the `CASTOR_AUTO_RENDER` to `1` to auto render JSON resquest and responses
 to JSON schemas.
+
+Dump to the console with `mitmdump`.
+
+```sh
+mitmdump -s ./castor.py
+```
 
 ## Output
 
@@ -73,7 +79,7 @@ auto rendering of JSON to JSON schema, set `CASTOR_AUTO_RENDER` to `1`.
 
 To save generated schema to disk, set `CASTOR_OUTPUT` to the path for saving.
 
-```
+```sh
 export CASTOR_OUTPUT=/mnt/data
 ```
 

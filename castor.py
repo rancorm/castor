@@ -115,29 +115,52 @@ class Castor:
         
         msg = f""
 
-        # Handle requests only with JSON responses
-        if resp_type == "application/json" and self.checks:
-            req_type = req.headers.get("Content-Type", None)
+        if len(req.content) > 0:
+            # Handle requests only with JSON responses
+            if resp_type == "application/json" or not self.checks:
+                req_type = req.headers.get("Content-Type", None)
 
-            if req_type:
-                if req_type == "application/json":
-                    try:
-                        req_json = req.json()
-                        req_schema = generate_schema(req_json)
-                        req_msg = json.dumps(req_schema, indent=2)
+                if req_type:
+                    if req_type == "application/json" or not self.checks:
+                        try:
+                            req_json = req.json()
+                            req_schema = generate_schema(req_json)
+                            req_msg = json.dumps(req_schema, indent=2)
 
-                        msg += "\n" + req_msg
+                            msg += "Request:\n" + req_msg
 
-                        if self.output:
-                            self._write_schema(req_msg,
-                                               req_host,
-                                               req_port,
-                                               req_path,
-                                               "req")
-                    except json.JSONDecodeError:
-                        ctx.log.error("Failed to parse JSON request")
+                            if self.output:
+                                self._write_schema(req_msg,
+                                                req_host,
+                                                req_port,
+                                                req_path,
+                                                "req")
+                        except json.JSONDecodeError:
+                            ctx.log.error("Failed to parse JSON request")
+                    else:
+                        # Not JSON request content type, try JSON decode, use text if that fails
+                        try:
+                            req_json = req.json()
+                            req_schema = generate_schema(req_json)
+                            req_msg = json.dumps(req_schema, indent=2)
+                        except json.JSONDecodeError:
+                            ctx.log.error("Failed to parse JSON request, using text instead")
+
+                            req_msg = req.get_text()
+
+                        if req_msg:
+                            msg += "Request:\n" + req_msg
+
+                            if self.output:
+                                self._write_schema(req_msg,
+                                                req_host,
+                                                req_port,
+                                                req_path,
+                                                "req")
                 else:
-                    # No JSON request, try JSON decode, output text if fails
+                    ctx.log.error("No content type in request")
+
+                    # No content type, attempt JSON decode, output text if fails
                     try:
                         req_json = req.json()
                         req_schema = generate_schema(req_json)
@@ -148,43 +171,21 @@ class Castor:
                         req_msg = req.get_text()
 
                     if req_msg:
-                        msg += "\n" + req_msg
-
+                        msg += "Request:\n" + req_msg
+                        
                         if self.output:
                             self._write_schema(req_msg,
-                                               req_host,
-                                               req_port,
-                                               req_path,
-                                               "req")
-            else: 
-                # No content type, attempt JSON decode, output text if fails
-                try:
-                    req_json = req.json()
-                    req_schema = generate_schema(req_json)
-                    req_msg = json.dumps(req_schema, indent=2)
-                except json.JSONDecodeError:
-                    ctx.log.error("Failed to parse JSON request, using text instead")
+                                            req_host,
+                                            req_port,
+                                            req_path,
+                                            "req")
 
-                    req_msg = req.get_text()
-
-                if req_msg:
-                    msg += "\n" + req_msg
-                    
-                    if self.output:
-                        self._write_schema(req_msg,
-                                           req_host,
-                                           req_port,
-                                           req_path,
-                                           "req")
-
-            # Log request and text
-            if msg:
-                ctx.log.info(f"---")
-                ctx.log.info(msg)
-                ctx.log.info(f"---")
+                # Log request
+                if msg:
+                    ctx.log.info(msg)
 
         # Handle JSON responses
-        if resp_type == "application/json" and self.checks:
+        if resp_type == "application/json" or not self.checks:
             try:
                 resp_json = resp.json()
 
@@ -193,8 +194,7 @@ class Castor:
                     resp_msg = json.dumps(resp_schema, indent=2)
                
                     if resp_msg:
-                        ctx.log.info("\n" + resp_msg)
-                        ctx.log.info(f"---")
+                        ctx.log.info("Response:\n" + resp_msg)
 
                     if self.output:
                         self._write_schema(resp_msg,
