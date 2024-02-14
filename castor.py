@@ -120,8 +120,8 @@ class Castor:
         
         msg = f""
 
-        if len(req.content) > 0:
-            # Handle requests only with JSON responses
+        if req.content and len(req.content) > 0:
+            # Handle requests only with JSON responses, or all requests if checks are disabled
             if resp_type == "application/json" or not self.checks:
                 req_type = req.headers.get("Content-Type", None)
 
@@ -161,7 +161,7 @@ class Castor:
                                                 req_path,
                                                 "req")
                 else:
-                    ctx.log.error("No content type in request")
+                    ctx.log.info("No content type in request")
 
                     # No content type, attempt JSON decode, output text if fails
                     try:
@@ -208,11 +208,17 @@ class Castor:
 
                 return
 
-view = CastorContentView()
 addons = [Castor()]
+view = CastorContentView()
 
 def load(loader: Loader):
     contentviews.add(view)
+
+    ctx.log.info("Options:")
+    ctx.log.info(f"  auto_render={view.auto_render}")
+    ctx.log.info(f"  checks={addons[0].checks}")
+    ctx.log.info(f"  output={addons[0].output}")
+    ctx.log.info("Castor loaded")
 
 def done():
     contentviews.remove(view)
