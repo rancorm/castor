@@ -72,7 +72,7 @@ class CastorContentView(contentviews.View):
         http_message: http.Message | None = None,
         **unknown_metadata,
     ) -> contentviews.TViewResult:
-        return "JSON schema", contentviews.format_text(json.dumps(generate_schema(flow.response.json()), indent=2) if flow else {})
+        return "JSON schema", contentviews.format_text(generate_schema_text(flow.response.json()) if flow else {})
 
     def render_priority(
         self,
@@ -83,10 +83,13 @@ class CastorContentView(contentviews.View):
         http_message: http.Message | None = None,
         **unknown_metadata,
     ) -> float:
+        if not data:
+            return 0.0
+
         if content_type in self.content_types and self.auto_render:
-            return 1
+            return 1.0
         else:
-            return 0
+            return 0.0
 
 class Castor:
     def __init__(self):
