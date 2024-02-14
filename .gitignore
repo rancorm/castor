@@ -1,3 +1,10 @@
+#
+# Castor .gitignore
+#
 
+# Byte-compiled / optimized / DLL files
 .venv/
 __pycache__/
+
+# macOS
+.DS_Store
