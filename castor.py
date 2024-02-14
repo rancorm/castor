@@ -19,6 +19,11 @@ from mitmproxy import flow
 from mitmproxy import http
 from mitmproxy.addonmanager import Loader
 
+def generate_schema_text(json_object):
+    schema = generate_schema(json_object)
+
+    return json.dumps(schema, indent=2)
+
 def generate_schema(json_object):
     schema = { "type": "object", "properties": {} }
 
@@ -124,8 +129,7 @@ class Castor:
                     if req_type == "application/json" or not self.checks:
                         try:
                             req_json = req.json()
-                            req_schema = generate_schema(req_json)
-                            req_msg = json.dumps(req_schema, indent=2)
+                            req_msg = generate_schema_text(req_json)
 
                             msg += "Request:\n" + req_msg
 
@@ -141,8 +145,7 @@ class Castor:
                         # Not JSON request content type, try JSON decode, use text if that fails
                         try:
                             req_json = req.json()
-                            req_schema = generate_schema(req_json)
-                            req_msg = json.dumps(req_schema, indent=2)
+                            req_msg = generate_schema_text(req_json)
                         except json.JSONDecodeError:
                             ctx.log.error("Failed to parse JSON request, using text instead")
 
@@ -163,8 +166,7 @@ class Castor:
                     # No content type, attempt JSON decode, output text if fails
                     try:
                         req_json = req.json()
-                        req_schema = generate_schema(req_json)
-                        req_msg = json.dumps(req_schema, indent=2)
+                        req_msg = generate_schema_text(req_json)
                     except json.JSONDecodeError:
                         ctx.log.error("Failed to parse JSON request, using text instead")
 
@@ -190,9 +192,8 @@ class Castor:
                 resp_json = resp.json()
 
                 if type(resp_json) is dict:
-                    resp_schema = generate_schema(resp_json)
-                    resp_msg = json.dumps(resp_schema, indent=2)
-               
+                    resp_msg = generate_schema_text(resp_json)
+
                     if resp_msg:
                         ctx.log.info("Response:\n" + resp_msg)
 
