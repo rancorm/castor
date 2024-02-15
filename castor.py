@@ -32,10 +32,9 @@ def generate_schema(json_object):
     if type(json_object) is not dict and type(json_object) is not list:
        return type(json_object).__name__.lower()
 
+    # Handle arrays
     if type(json_object) is list:
-        # Assume that all elements in the array have the same schema
-        for item in json_object:
-            return generate_schema(item) if item else {}
+        return [generate_schema(item) for item in json_object]
 
     # Generate schema for each key in the JSON object
     for key, value in json_object.items():
@@ -103,16 +102,15 @@ class Castor:
         self.checks = os.getenv("CASTOR_CHECKS", 1)
     
     def _write_schema(self, schema, host, port, path, direction: CastorType):
-        if self.output:
-            endpoint_path = path.replace("/", "_")
-            current_time = time.time()
-            file_name = f"{host}_{port}.{current_time}.{direction.value}.json"
-            file_path = os.path.join(self.output, file_name)
+        endpoint_path = path.replace("/", "_")
+        current_time = time.time()
+        file_name = f"{host}_{port}.{current_time}.{direction.value}.json"
+        file_path = os.path.join(self.output, file_name)
 
-            ctx.log.info(f"Writing schema to {file_path}")
+        ctx.log.info(f"Writing schema to {file_path}")
 
-            with open(file_path, "w") as file:
-               json.dump(schema, file, indent=2)
+        with open(file_path, "w") as file:
+            json.dump(schema, file, indent=2)
 
     def response(self, flow):
         # Flow request
