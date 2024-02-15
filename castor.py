@@ -12,6 +12,9 @@ Set environment variable CASTOR_OUTPUT=/path/to/json/schemas/ to enable output t
 """
 import json
 import os
+import time
+
+from enum import Enum
 
 from mitmproxy import contentviews
 from mitmproxy import ctx
@@ -20,9 +23,7 @@ from mitmproxy import http
 from mitmproxy.addonmanager import Loader
 
 def generate_schema_text(json_object):
-    schema = generate_schema(json_object)
-
-    return json.dumps(schema, indent=2)
+    return json.dumps(json_object, indent=2)
 
 def generate_schema(json_object):
     schema = { "type": "object", "properties": {} }
@@ -91,21 +92,27 @@ class CastorContentView(contentviews.View):
         else:
             return 0.0
 
+class CastorType(Enum):
+    REQUEST = "req"
+    RESPONSE = "resp"
+
 class Castor:
     def __init__(self):
         self.schemas = []
         self.output = os.getenv("CASTOR_OUTPUT", None)
         self.checks = os.getenv("CASTOR_CHECKS", 1)
-
-    def _write_schema(self, schema, host, port, path, direction):
+    
+    def _write_schema(self, schema, host, port, path, direction: CastorType):
         if self.output:
             endpoint_path = path.replace("/", "_")
-            file_name = f"{host}_{port}{endpoint_path}.{direction}.json"
+            current_time = time.time()
+            file_name = f"{host}_{port}.{current_time}.{direction.value}.json"
             file_path = os.path.join(self.output, file_name)
 
             ctx.log.info(f"Writing schema to {file_path}")
-            #with open(file_path, "w") as file:
-            #   json.dump(schema, file, indent=2)
+
+            with open(file_path, "w") as file:
+               json.dump(schema, file, indent=2)
 
     def response(self, flow):
         # Flow request
@@ -132,23 +139,25 @@ class Castor:
                     if req_type == "application/json" or not self.checks:
                         try:
                             req_json = req.json()
-                            req_msg = generate_schema_text(req_json)
+                            req_schema = generate_schema(req_json)
+                            req_msg = generate_schema_text(req_schema)
 
                             msg += "Request:\n" + req_msg
 
                             if self.output:
-                                self._write_schema(req_msg,
+                                self._write_schema(req_schema,
                                                 req_host,
                                                 req_port,
                                                 req_path,
-                                                "req")
+                                                CastorType.REQUEST)
                         except json.JSONDecodeError:
                             ctx.log.error("Failed to parse JSON request")
                     else:
                         # Not JSON request content type, try JSON decode, use text if that fails
                         try:
                             req_json = req.json()
-                            req_msg = generate_schema_text(req_json)
+                            req_schema = generate_schema(req_json)
+                            req_msg = generate_schema_text(req_schema)
                         except json.JSONDecodeError:
                             ctx.log.error("Failed to parse JSON request, using text instead")
 
@@ -158,18 +167,19 @@ class Castor:
                             msg += "Request:\n" + req_msg
 
                             if self.output:
-                                self._write_schema(req_msg,
+                                self._write_schema(req_schema,
                                                 req_host,
                                                 req_port,
                                                 req_path,
-                                                "req")
+                                                CastorType.REQUEST)
                 else:
                     ctx.log.info("No content type in request")
 
                     # No content type, attempt JSON decode, output text if fails
                     try:
                         req_json = req.json()
-                        req_msg = generate_schema_text(req_json)
+                        req_schema = generate_schema(req_json)
+                        req_msg = generate_schema_text(req_schema)
                     except json.JSONDecodeError:
                         ctx.log.error("Failed to parse JSON request, using text instead")
 
@@ -179,15 +189,27 @@ class Castor:
                         msg += "Request:\n" + req_msg
                         
                         if self.output:
-                            self._write_schema(req_msg,
+                            self._write_schema(req_schema,
                                             req_host,
                                             req_port,
                                             req_path,
-                                            "req")
+                                            CastorType.REQUEST)
 
                 # Log request
                 if msg:
                     ctx.log.info(msg)
+ 
+        # Write request URI to file system, if output is enabled, and response is JSON
+        # or checks are disabled.
+        if self.output and resp_type == "application/json" or not self.checks:
+            current_time = time.time()
+            file_name = f"{req_host}_{req_port}.{current_time}.req-uri"
+            file_path = os.path.join(self.output, file_name)
+
+            ctx.log.info(f"Writing request URI to {file_path}")
+
+            with open(file_path, "w") as file:
+                file.write(f"{req_method} {req_path} {req_version}")
 
         # Handle JSON responses
         if resp_type == "application/json" or not self.checks:
@@ -195,17 +217,18 @@ class Castor:
                 resp_json = resp.json()
 
                 if type(resp_json) is dict:
-                    resp_msg = generate_schema_text(resp_json)
+                    resp_schema = generate_schema(resp_json)
+                    resp_msg = generate_schema_text(resp_schema)
 
                     if resp_msg:
                         ctx.log.info("Response:\n" + resp_msg)
 
                     if self.output:
-                        self._write_schema(resp_msg,
+                        self._write_schema(resp_schema,
                                            req_host,
                                            req_port,
                                            req_path,
-                                           "resp")
+                                           CastorType.RESPONSE)
             except json.JSONDecodeError:
                 ctx.log.error("Failed to parse JSON response")
 
