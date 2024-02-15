@@ -28,14 +28,7 @@ from mitmproxy.addonmanager import Loader
 date_time_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$')
 time_pattern = re.compile(r'^\d{2}:\d{2}:\d{2}$')
 date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}$')
-duration_pattern = re.compile(
-    r'^P(?:'
-    r'(?:(\d+)Y)?'
-    r'(?:(\d+)M(?:([0-9]+)D)?)?'
-    r'(?:T(\d+H)?)?'
-    r'(?:(\d+M)?)?'
-    r'(?:(\d+)S)?)?$'
-)
+duration_pattern = re.compile(r'^P(?:\d+Y)?(?:\d+M(?:\d+D)?)?(?:T\d+H)?(?:\d+M)?(?:\d+S)?$')
 
 ## Email addresses
 email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
