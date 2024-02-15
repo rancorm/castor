@@ -13,6 +13,7 @@ Set environment variable CASTOR_OUTPUT=/path/to/json/schemas/ to enable output t
 import json
 import os
 import time
+import re
 
 from enum import Enum
 
@@ -22,6 +23,94 @@ from mitmproxy import flow
 from mitmproxy import http
 from mitmproxy.addonmanager import Loader
 
+# JSON built-in formats
+## Date and times
+date_time_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$')
+time_pattern = re.compile(r'^\d{2}:\d{2}:\d{2}$')
+date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+duration_pattern = re.compile(
+    r'^P(?:'
+    r'(?:(\d+)Y)?'
+    r'(?:(\d+)M(?:([0-9]+)D)?)?'
+    r'(?:T(\d+H)?)?'
+    r'(?:(\d+M)?)?'
+    r'(?:(\d+)S)?)?$'
+)
+
+## Email addresses
+email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+idn_email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+
+## Hostnames
+hostname_pattern = re.compile(r'^[a-zA-Z0-9.-]+$')
+idn_hostname_pattern = re.compile(r'^[a-zA-Z0-9.-]+$')
+
+## IP addresses
+ipv4_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+ipv6_pattern = re.compile(r'^[a-fA-F0-9:]+$')
+
+## Resource identifiers
+uuid_pattern = re.compile(r'^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$')
+uri_pattern = re.compile(r'^[a-zA-Z0-9:/?#\[\]@!$&\'()*+,;=._%-]+$')
+uri_reference_pattern = re.compile(r'^[a-zA-Z0-9:/?#\[\]@!$&\'()*+,;=._%-]+$')
+iri_pattern = re.compile(r'^[^\x00-\x1F\x7F-\x9F\s]+$')
+iri_reference_pattern = re.compile(r'^[^\x00-\x1F\x7F-\x9F\s]+$')
+
+## URI template
+uri_template_pattern = re.compile(r'^[a-zA-Z0-9:/?#\[\]@!$&\'()*+,;=._%-]+$')
+
+## JSON pointer
+json_pointer_pattern = re.compile(r'^(/[^/]+)+$')
+relative_json_pointer_pattern = re.compile(r'^([^/]+/)*[^/]+$')
+
+## Regular expressions
+regex_pattern = re.compile(r'.*')
+
+def type_name(obj):
+    return type(obj).__name__.lower()
+
+def match_data_type(data):
+    if date_time_pattern.match(data):
+        return "date-time"
+    elif time_pattern.match(data):
+        return "time"
+    elif date_pattern.match(data):
+        return "date"
+    elif duration_pattern.match(data):
+        return "duration"
+    elif email_pattern.match(data):
+        return "email"
+    elif idn_email_pattern.match(data):
+        return "idn-email"
+    elif hostname_pattern.match(data):
+        return "hostname"
+    elif idn_hostname_pattern.match(data):
+        return "idn-hostname"
+    elif ipv4_pattern.match(data):
+        return "ipv4"
+    elif ipv6_pattern.match(data):
+        return "ipv6"
+    elif uuid_pattern.match(data):
+        return "uuid"
+    elif uri_pattern.match(data):
+        return "uri"
+    elif uri_reference_pattern.match(data):
+        return "uri-reference"
+    elif iri_pattern.match(data):
+        return "iri"
+    elif iri_reference_pattern.match(data):
+        return "iri-reference"
+    elif uri_template_pattern.match(data):
+        return "uri-template"
+    elif json_pointer_pattern.match(data):
+        return "json-pointer"
+    elif relative_json_pointer_pattern.match(data):
+        return "relative-json-pointer"
+    elif regex_pattern.match(data):
+        return "regex"
+    else:
+        return None
+
 def generate_schema_text(json_object):
     return json.dumps(json_object, indent=2)
 
@@ -30,7 +119,7 @@ def generate_schema(json_object):
 
     # Handle simple types 
     if type(json_object) is not dict and type(json_object) is not list:
-       return type(json_object).__name__.lower()
+       return type_name(json_object)
 
     # Handle arrays
     if type(json_object) is list:
@@ -54,7 +143,14 @@ def generate_schema(json_object):
                 schema["properties"][key] = { "type": "array" }
         else:
             # Simple type
-            schema["properties"][key] = { "type": type(value).__name__.lower() }
+            schema["properties"][key] = { "type": type_name(value) }
+
+            # Check if the string matches a known data type, and add pattern if it does
+            if isinstance(value, str):
+                pattern = match_data_type(value)
+
+                if pattern:
+                    schema["properties"][key].update({ "pattern": pattern })
 
     return schema
 
