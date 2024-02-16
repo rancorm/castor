@@ -126,16 +126,17 @@ def generate_schema(json_object):
             else:
                 # Empty array, no specific items schema
                 schema["properties"][key] = { "type": "array" }
-        else:
-            # Simple type
-            schema["properties"][key] = { "type": type_name(value) }
+        elif isinstance(value, str):
+            schema["properties"][key] = { "type": "string" }
 
             # Check if the string matches a known data type, and add pattern if it does
-            if isinstance(value, str):
-                pattern = match_data_type(value)
+            pattern = match_data_type(value)
 
-                if pattern:
-                    schema["properties"][key].update({ "pattern": pattern })
+            if pattern:
+                schema["properties"][key].update({ "pattern": pattern })
+        else:
+                # Simple type
+                schema["properties"][key] = { "type": type_name(value) }
 
     return schema
 
@@ -143,6 +144,9 @@ class CastorContentView(contentviews.View):
     name = "json-schema"
     content_types = [ "application/json" ]
     auto_render = os.getenv("CASTOR_AUTO_RENDER", 0)
+
+    def _schema(self, message):
+        return generate_schema_text(generate_schema(message.json()))
 
     def __call__(
         self,
@@ -153,7 +157,7 @@ class CastorContentView(contentviews.View):
         http_message: http.Message | None = None,
         **unknown_metadata,
     ) -> contentviews.TViewResult:
-        return "JSON schema", contentviews.format_text(generate_schema_text(flow.response.json()) if flow else {})
+        return "JSON schema", contentviews.format_text(self._schema(http_message) if flow else {})
 
     def render_priority(
         self,

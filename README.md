@@ -58,7 +58,8 @@ Example output from `mitmproxy` generated JSON schema.
       "type": "int"
     },
     "CalendarModelEventID": {
-      "type": "str"
+      "type": "str",
+      "pattern": "uri"
     },
     "Refresh": {
       "type": "int"
