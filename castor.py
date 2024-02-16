@@ -34,10 +34,6 @@ duration_pattern = re.compile(r'^P(?:\d+Y)?(?:\d+M(?:\d+D)?)?(?:T\d+H)?(?:\d+M)?
 email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 idn_email_pattern = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
-## Hostnames
-hostname_pattern = re.compile(r'^[a-zA-Z0-9.-]+$')
-idn_hostname_pattern = re.compile(r'^[a-zA-Z0-9.-]+$')
-
 ## IP addresses
 ipv4_pattern = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
 ipv6_pattern = re.compile(r'^[a-fA-F0-9:]+$')
@@ -53,8 +49,8 @@ iri_reference_pattern = re.compile(r'^[^\x00-\x1F\x7F-\x9F\s]+$')
 uri_template_pattern = re.compile(r'^[a-zA-Z0-9:/?#\[\]@!$&\'()*+,;=._%-]+$')
 
 ## JSON pointer
-json_pointer_pattern = re.compile(r'^(/[^/]+)+$')
-relative_json_pointer_pattern = re.compile(r'^([^/]+/)*[^/]+$')
+json_pointer_pattern = re.compile(r'^/[^/]+(?:/[^/]+)*$')
+relative_json_pointer_pattern = re.compile(r'^[^/]+(?:/[^/]+)*$')
 
 ## Regular expressions
 regex_pattern = re.compile(r'.*')
@@ -75,10 +71,6 @@ def match_data_type(data):
         return "email"
     elif idn_email_pattern.match(data):
         return "idn-email"
-    elif hostname_pattern.match(data):
-        return "hostname"
-    elif idn_hostname_pattern.match(data):
-        return "idn-hostname"
     elif ipv4_pattern.match(data):
         return "ipv4"
     elif ipv6_pattern.match(data):
