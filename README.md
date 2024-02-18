@@ -48,7 +48,7 @@ mitmdump -s ./castor.py
 
 ## Output
 
-Example output from `mitmproxy` generated JSON schema.
+Example output from `mitmdump` generated JSON schema.
 
 ```json
 {
@@ -84,4 +84,4 @@ To save generated schema to disk, set `CASTOR_OUTPUT` to the path for saving.
 export CASTOR_OUTPUT=/mnt/data
 ```
 
-This can perticularly be useful with persisent storage volumes.
+This can perticularly be useful with persisent storage volumes inside containers.

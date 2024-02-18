@@ -2,7 +2,7 @@
 JSON schema mitmproxy addon.
 
 Run as follows:
-    mitmproxy -s castor.py
+    mitmdump -s castor.py
 or 
     mitmweb -s castor.py
 
@@ -52,9 +52,6 @@ uri_template_pattern = re.compile(r'^[a-zA-Z0-9:/?#\[\]@!$&\'()*+,;=._%-]+$')
 json_pointer_pattern = re.compile(r'^/[^/]+(?:/[^/]+)*$')
 relative_json_pointer_pattern = re.compile(r'^[^/]+(?:/[^/]+)*$')
 
-## Regular expressions
-regex_pattern = re.compile(r'.*')
-
 def type_name(obj):
     return type(obj).__name__.lower()
 
@@ -91,8 +88,6 @@ def match_data_type(data):
         return "json-pointer"
     elif relative_json_pointer_pattern.match(data):
         return "relative-json-pointer"
-    elif regex_pattern.match(data):
-        return "regex"
     else:
         return None
 
